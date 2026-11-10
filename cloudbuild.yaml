@@ -46,9 +46,10 @@ steps:
 
 # [START gke_management_gitops_delivery_cloudbuild_trigger_cd]
 # Set up write access to the hello-cloudbuild-env repository
-- name: 'gcr.io/cloud-builders/git'
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Copy private key
   secretEnv: ['SSH_KEY']
-  entrypoint: 'bash'
+  entrypoint: /bin/sh
   args:
   - -c
   - |
