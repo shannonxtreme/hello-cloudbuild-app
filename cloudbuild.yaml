@@ -45,6 +45,19 @@ steps:
 # [END gke_management_gitops_delivery_cloudbuild]
 
 # [START gke_management_gitops_delivery_cloudbuild_trigger_cd]
+# Set up write access to the hello-cloudbuild-env repository
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Copy private key
+  secretEnv: ['SSH_KEY']
+  entrypoint: /bin/sh
+  args:
+  - -c
+  - |
+    echo "$$SSH_KEY" > /root/.ssh/id_ed25519 && \
+    chmod 400 /root/.ssh/id_ed25519
+  volumes:
+  - name: 'ssh'
+    path: /root/.ssh
 
 # This step clones the hello-cloudbuild-env repository
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -92,6 +105,6 @@ steps:
 availableSecrets:
   secretManager:
   - versionName: projects/shannduin-joonix/secrets/gke-github-keys/versions/latest
-    env: ['SSH_KEY']
+    env: 'SSH_KEY'
 
 # [END gke_management_gitops_delivery_cloudbuild_trigger_cd]
