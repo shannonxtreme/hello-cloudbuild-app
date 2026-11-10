@@ -45,24 +45,40 @@ steps:
 # [END gke_management_gitops_delivery_cloudbuild]
 
 # [START gke_management_gitops_delivery_cloudbuild_trigger_cd]
+# Set up write access to the hello-cloudbuild-env repository
+- name: 'gcr.io/cloud-builders/git'
+  secretEnv: ['SSH_KEY']
+  entrypoint: 'bash'
+  args:
+  - -c
+  - |
+    echo "$$SSH_KEY" > /root/.ssh/id_ed25519 && \
+    chmod 400 /root/.ssh/id_ed25519
+  volumes:
+  - name: 'ssh'
+    path: /root/.ssh
+
 # This step clones the hello-cloudbuild-env repository
 - name: 'gcr.io/cloud-builders/gcloud'
   id: Clone env repository
   entrypoint: /bin/sh
   args:
-  - '-c'
+  - -c
   - |
-    git clone https://github.com/shannonxtreme/hello-cloudbuild-env.git && \
+    git clone git@github.com:shannonxtreme/hello-cloudbuild-env.git && \
     cd hello-cloudbuild-env && \
     git checkout candidate && \
     git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)')
+  volumes:
+  - name: 'ssh'
+    path: /root/.ssh
 
 # This step generates the new manifest
 - name: 'gcr.io/cloud-builders/gcloud'
   id: Generate manifest
   entrypoint: /bin/sh
   args:
-  - '-c'
+  - -c
   - |
      sed "s/GOOGLE_CLOUD_PROJECT/${PROJECT_ID}/g" kubernetes.yaml.tpl | \
      sed "s/COMMIT_SHA/${SHORT_SHA}/g" > hello-cloudbuild-env/kubernetes.yaml
@@ -72,7 +88,7 @@ steps:
   id: Push manifest
   entrypoint: /bin/sh
   args:
-  - '-c'
+  - -c
   - |
     set -x && \
     cd hello-cloudbuild-env && \
@@ -81,5 +97,13 @@ steps:
     Built from commit ${COMMIT_SHA} of repository hello-cloudbuild-app
     Author: $(git log --format='%an <%ae>' -n 1 HEAD)" && \
     git push origin candidate
+  volumes:
+  - name: 'ssh'
+    path: /root/.ssh
+
+availableSecrets:
+  secretManager:
+  - versionName: projects/shannduin-joonix/secrets/gke-github-keys/versions/latest
+    env: ['SSH_KEY']
 
 # [END gke_management_gitops_delivery_cloudbuild_trigger_cd]
